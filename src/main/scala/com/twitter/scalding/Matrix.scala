@@ -604,7 +604,7 @@ class Scalar[ValT](val valSym : Symbol, inPipe : Pipe) extends WrappedPipe with 
 
 class DiagonalMatrix[IdxT,ValT](val idxSym : Symbol,
   val valSym : Symbol, inPipe : Pipe, val sizeHint : SizeHint)
-  extends WrappedPipe {
+  extends WrappedPipe with java.io.Serializable {
 
   def *[That,Res](that : That)(implicit prod : MatrixProduct[DiagonalMatrix[IdxT,ValT],That,Res]) : Res
     = { prod(this, that) }
