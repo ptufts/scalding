@@ -610,6 +610,27 @@ class Matrix[RowT, ColT, ValT]
     new Matrix[RowT,ColT,(ValT,ValU)](rowSym, colSym, valSym, zipped, sizeHint + that.sizeHint)
   }
 
+  /**
+   * removes any elements in this matrix that also appear in the argument matrix
+   */
+  def filterBy[ValU](that : Matrix[RowT,ColT,ValU]) : Matrix[RowT,ColT,ValT] = {
+    val filterField = '___filter_field___
+
+    val joined = pipe.joinWithSmaller((rowSym, colSym) -> (that.rowSym, that.colSym), that.pipe.rename(that.valSym -> filterField))
+    val filtered = joined.filter(filterField){ x : ValU => null == x }
+    new Matrix[RowT,ColT,ValT](rowSym,colSym,valSym, filtered.project(rowSym,colSym,valSym))
+  }
+
+
+  /**
+   * keeps only those rows that are in the joining column
+   */
+  def keepRowsBy[ValU](that : ColVector[RowT,ValU]) : Matrix[RowT,ColT,ValT] = {
+    val joined = pipe.joinWithSmaller(rowSym -> that.rowS, that.pipe.project(that.rowS))
+    new Matrix[RowT,ColT,ValT](rowSym,colSym,valSym, joined.project(rowSym,colSym,valSym))
+  }
+
+
   /** Write the matrix, optionally renaming row,col,val fields to the given fields
    * then return this.
    */
