@@ -43,7 +43,9 @@ object Mode {
   /**
   * This mode is used by default by sources in read and write
   */
-  implicit var mode : Mode = Local(false, new Configuration)
+  def emptyConf = { val c = new Configuration; c.clear; c }
+
+  implicit var mode : Mode = Local(false, emptyConf)
 
   // This should be passed ALL the args supplied after the job name
   def apply(args : Args, config : Configuration) : Mode = {
