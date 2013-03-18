@@ -143,6 +143,58 @@ object MatrixProduct extends java.io.Serializable {
       }
     }
 
+  implicit def scalarRowVectorRightProduct[Col,ValT](implicit ring : Ring[ValT]) :
+    MatrixProduct[RowVector[Col,ValT],Scalar[ValT],RowVector[Col,ValT]] =
+    new MatrixProduct[RowVector[Col,ValT],Scalar[ValT],RowVector[Col,ValT]] {
+      def apply(left : RowVector[Col,ValT], right : Scalar[ValT]) : RowVector[Col,ValT]= {
+        val prod = left.toMatrix(0).nonZerosWith(right).mapValues({leftRight =>
+          val (left, right) = leftRight
+          ring.times(left, right)
+        })(ring)
+
+        new RowVector[Col,ValT](prod.colSym, prod.valSym, prod.pipe.project(prod.colSym, prod.valSym))
+      }
+    }
+
+  implicit def scalarRowLeftProduct[Col,ValT](implicit ring : Ring[ValT]) :
+    MatrixProduct[Scalar[ValT],RowVector[Col,ValT],RowVector[Col,ValT]] =
+    new MatrixProduct[Scalar[ValT],RowVector[Col,ValT],RowVector[Col,ValT]] {
+      def apply(left : Scalar[ValT], right : RowVector[Col,ValT]) : RowVector[Col,ValT]= {
+        val prod = right.toMatrix(0).nonZerosWith(left).mapValues({matScal =>
+          val (matVal, scalarVal) = matScal
+          ring.times(scalarVal, matVal)
+        })(ring)
+
+        new RowVector[Col,ValT](prod.rowSym, prod.valSym, prod.pipe.project(prod.rowSym, prod.valSym))
+      }
+    }
+
+  implicit def scalarColVectorRightProduct[Row,ValT](implicit ring : Ring[ValT]) :
+    MatrixProduct[ColVector[Row,ValT],Scalar[ValT],ColVector[Row,ValT]] =
+    new MatrixProduct[ColVector[Row,ValT],Scalar[ValT],ColVector[Row,ValT]] {
+      def apply(left : ColVector[Row,ValT], right : Scalar[ValT]) : ColVector[Row,ValT]= {
+        val prod = left.toMatrix(0).nonZerosWith(right).mapValues({leftRight =>
+          val (left, right) = leftRight
+          ring.times(left, right)
+        })(ring)
+
+        new ColVector[Row,ValT](prod.rowSym, prod.valSym, prod.pipe.project(prod.rowSym, prod.valSym))
+      }
+    }
+
+  implicit def scalarColLeftProduct[Row,ValT](implicit ring : Ring[ValT]) :
+    MatrixProduct[Scalar[ValT],ColVector[Row,ValT],ColVector[Row,ValT]] =
+    new MatrixProduct[Scalar[ValT],ColVector[Row,ValT],ColVector[Row,ValT]] {
+      def apply(left : Scalar[ValT], right : ColVector[Row,ValT]) : ColVector[Row,ValT]= {
+        val prod = right.toMatrix(0).nonZerosWith(left).mapValues({matScal =>
+          val (matVal, scalarVal) = matScal
+          ring.times(scalarVal, matVal)
+        })(ring)
+
+        new ColVector[Row,ValT](prod.rowSym, prod.valSym, prod.pipe.project(prod.rowSym, prod.valSym))
+      }
+    }
+
   implicit def rowColProduct[IdxT,ValT](implicit ring : Ring[ValT]) :
     MatrixProduct[RowVector[IdxT,ValT],ColVector[IdxT,ValT],Scalar[ValT]] =
     new MatrixProduct[RowVector[IdxT,ValT],ColVector[IdxT,ValT],Scalar[ValT]] {
@@ -151,6 +203,24 @@ object MatrixProduct extends java.io.Serializable {
         val prod = (left.toMatrix(0) * right.toMatrix(0)) : Matrix[Int,Int,ValT]
         new Scalar[ValT](prod.valSym, prod.pipe.project(prod.valSym))
       }
+    }
+
+  implicit def matrixColVecProduct[RowT,CommonT,ValT](implicit rink : Ring[ValT]) :
+    MatrixProduct[Matrix[RowT,CommonT,ValT],ColVector[CommonT,ValT],ColVector[RowT,ValT]] =
+      new MatrixProduct[Matrix[RowT,CommonT,ValT],ColVector[CommonT,ValT],ColVector[RowT,ValT]] {
+        def apply(left : Matrix[RowT,CommonT,ValT], right : ColVector[CommonT,ValT]) : ColVector[RowT,ValT] = {
+          val prod = (left * right.toMatrix(0)) : Matrix[RowT,Int,ValT]
+          new ColVector[RowT,ValT](prod.rowSym, prod.valSym, prod.pipe.project(prod.rowSym, prod.valSym))
+        }
+    }
+
+  implicit def rowVecMatrixProduct[CommonT,ColT,ValT](implicit rink : Ring[ValT]) :
+    MatrixProduct[RowVector[CommonT,ValT],Matrix[CommonT,ColT,ValT],RowVector[ColT,ValT]] =
+      new MatrixProduct[RowVector[CommonT,ValT],Matrix[CommonT,ColT,ValT],RowVector[ColT,ValT]] {
+        def apply(left : RowVector[CommonT,ValT], right : Matrix[CommonT,ColT,ValT]) : RowVector[ColT,ValT] = {
+          val prod = (left.toMatrix(0) * right) : Matrix[Int,ColT,ValT]
+          new RowVector[ColT,ValT](prod.colSym, prod.valSym, prod.pipe.project(prod.colSym, prod.valSym))
+        }
     }
 
   implicit def standardMatrixProduct[RowL,Common,ColR,ValT](implicit ring : Ring[ValT]) :

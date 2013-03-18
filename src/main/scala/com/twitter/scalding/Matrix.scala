@@ -54,19 +54,56 @@ import scala.annotation.tailrec
 class MatrixPipeExtensions(pipe : Pipe) {
   def toMatrix[RowT,ColT,ValT](fields : Fields)
     (implicit conv : TupleConverter[(RowT,ColT,ValT)], setter : TupleSetter[(RowT,ColT,ValT)], tracing : Tracing) = {
-    val matPipe = RichPipe(pipe).mapTo(fields -> ('row,'col,'val))((tup : (RowT,ColT,ValT)) => tup)(conv,setter,tracing)
-    new Matrix[RowT,ColT,ValT]('row, 'col, 'val, matPipe)
+      val matPipe = RichPipe(pipe).mapTo(fields -> ('row,'col,'val))((tup : (RowT,ColT,ValT)) => tup)(conv,setter,tracing)
+      new Matrix[RowT,ColT,ValT]('row, 'col, 'val, matPipe)
   }
   def mapToMatrix[T,RowT,ColT,ValT](fields : Fields)(mapfn : T => (RowT,ColT,ValT))
     (implicit conv : TupleConverter[T], setter : TupleSetter[(RowT,ColT,ValT)], tracing : Tracing) = {
-    val matPipe = RichPipe(pipe).mapTo(fields -> ('row,'col,'val))(mapfn)(conv,setter,tracing)
-    new Matrix[RowT,ColT,ValT]('row, 'col, 'val, matPipe)
+      val matPipe = RichPipe(pipe).mapTo(fields -> ('row,'col,'val))(mapfn)(conv,setter,tracing)
+      new Matrix[RowT,ColT,ValT]('row, 'col, 'val, matPipe)
   }
   def flatMapToMatrix[T,RowT,ColT,ValT](fields : Fields)(flatMapfn : T => Iterable[(RowT,ColT,ValT)])
     (implicit conv : TupleConverter[T], setter : TupleSetter[(RowT,ColT,ValT)], tracing : Tracing) = {
-    val matPipe = RichPipe(pipe).flatMapTo(fields -> ('row,'col,'val))(flatMapfn)(conv,setter,tracing)
-    new Matrix[RowT,ColT,ValT]('row, 'col, 'val, matPipe)
+      val matPipe = RichPipe(pipe).flatMapTo(fields -> ('row,'col,'val))(flatMapfn)(conv,setter,tracing)
+      new Matrix[RowT,ColT,ValT]('row, 'col, 'val, matPipe)
   }
+
+  def toColVector[RowT,ValT](fields : Fields)
+    (implicit conv : TupleConverter[(RowT,ValT)], setter : TupleSetter[(RowT,ValT)], tracing : Tracing) = {
+      val vecPipe = RichPipe(pipe).mapTo(fields -> ('row, 'val))((tup : (RowT, ValT)) => tup)(conv,setter,tracing)
+      new ColVector[RowT,ValT]('row, 'val, vecPipe)
+  }
+
+  def mapToColVector[T,RowT,ValT](fields : Fields)(mapfn : T => (RowT,ValT))
+    (implicit conv : TupleConverter[T], setter : TupleSetter[(RowT,ValT)], tracing : Tracing) = {
+      val vecPipe = RichPipe(pipe).mapTo(fields -> ('row, 'val))(mapfn)(conv,setter,tracing)
+      new ColVector[RowT,ValT]('row, 'val, vecPipe)
+  }
+
+  def flatMapToColVector[T,RowT,ValT](fields : Fields)(flatMapfn : T => Iterable[(RowT,ValT)])
+    (implicit conv : TupleConverter[T], setter : TupleSetter[(RowT,ValT)], tracing : Tracing) = {
+      val vecPipe = RichPipe(pipe).flatMapTo(fields -> ('row, 'val))(flatMapfn)(conv,setter,tracing)
+      new ColVector[RowT,ValT]('row, 'val, vecPipe)
+  }
+
+  def toRowVector[ColT,ValT](fields : Fields)
+    (implicit conv : TupleConverter[(ColT,ValT)], setter : TupleSetter[(ColT,ValT)], tracing : Tracing) = {
+      val vecPipe = RichPipe(pipe).mapTo(fields -> ('col, 'val))((tup : (ColT, ValT)) => tup)(conv,setter,tracing)
+      new RowVector[ColT,ValT]('col, 'val, vecPipe)
+  }
+
+  def mapToRowVector[T,ColT,ValT](fields : Fields)(mapfn : T => (ColT,ValT))
+    (implicit conv : TupleConverter[T], setter : TupleSetter[(ColT,ValT)], tracing : Tracing) = {
+      val vecPipe = RichPipe(pipe).mapTo(fields -> ('col, 'val))(mapfn)(conv,setter,tracing)
+      new RowVector[ColT,ValT]('col, 'val, vecPipe)
+  }
+
+  def flatMapToRowVector[T,ColT,ValT](fields : Fields)(flatMapfn : T => Iterable[(ColT,ValT)])
+    (implicit conv : TupleConverter[T], setter : TupleSetter[(ColT,ValT)], tracing : Tracing) = {
+      val vecPipe = RichPipe(pipe).flatMapTo(fields -> ('col, 'val))(flatMapfn)(conv,setter,tracing)
+      new RowVector[ColT,ValT]('col, 'val, vecPipe)
+  }
+
 }
 
 /** This is the enrichment pattern on Mappable[T] for converting to Matrix types
@@ -603,7 +640,7 @@ class Scalar[ValT](val valSym : Symbol, inPipe : Pipe) extends WrappedPipe with 
 }
 
 class DiagonalMatrix[IdxT,ValT](val idxSym : Symbol,
-  val valSym : Symbol, inPipe : Pipe, val sizeHint : SizeHint)
+  val valSym : Symbol, inPipe : Pipe, val sizeHint : SizeHint = FiniteHint(1L, -1L))
   extends WrappedPipe with java.io.Serializable {
 
   def *[That,Res](that : That)(implicit prod : MatrixProduct[DiagonalMatrix[IdxT,ValT],That,Res]) : Res
@@ -675,6 +712,13 @@ class RowVector[ColT,ValT] (val colS:Symbol, val valS:Symbol, inPipe: Pipe, val 
   def propagate[MatColT](mat: Matrix[ColT,MatColT,Boolean])(implicit monT: Monoid[ValT])
     : RowVector[MatColT,ValT] = {
     mat.transpose.propagate(this.transpose).transpose
+  }
+
+  def L1Normalize(implicit ev : =:=[ValT,Double]) : RowVector[ColT,ValT] = {
+    val normedMatrix = this.toMatrix(0).rowL1Normalize
+    new RowVector(normedMatrix.colSym,
+                  normedMatrix.valSym,
+                  normedMatrix.pipe.project(normedMatrix.colSym, normedMatrix.valSym))
   }
 
   def sum(implicit mon : Monoid[ValT]) : Scalar[ValT] = {
@@ -762,6 +806,14 @@ class ColVector[RowT,ValT] (val rowS:Symbol, val valS:Symbol, inPipe : Pipe, val
       }
     }
     new Scalar[ValT](valS, scalarPipe)
+  }
+
+
+  def L1Normalize(implicit ev : =:=[ValT,Double]) : ColVector[RowT,ValT] = {
+    val normedMatrix = this.toMatrix(0).colL1Normalize
+    new ColVector(normedMatrix.rowSym,
+                  normedMatrix.valSym,
+                  normedMatrix.pipe.project(normedMatrix.rowSym, normedMatrix.valSym))
   }
 
   def topElems( k : Int )(implicit ord : Ordering[ValT]) : ColVector[RowT,ValT] = {
