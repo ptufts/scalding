@@ -205,7 +205,7 @@ object MatrixProduct extends java.io.Serializable {
       }
     }
 
-  implicit def matrixColVecProduct[RowT,CommonT,ValT](implicit rink : Ring[ValT]) :
+  implicit def matrixColVecProduct[RowT,CommonT,ValT](implicit ring : Ring[ValT]) :
     MatrixProduct[Matrix[RowT,CommonT,ValT],ColVector[CommonT,ValT],ColVector[RowT,ValT]] =
       new MatrixProduct[Matrix[RowT,CommonT,ValT],ColVector[CommonT,ValT],ColVector[RowT,ValT]] {
         def apply(left : Matrix[RowT,CommonT,ValT], right : ColVector[CommonT,ValT]) : ColVector[RowT,ValT] = {
@@ -214,12 +214,24 @@ object MatrixProduct extends java.io.Serializable {
         }
     }
 
-  implicit def rowVecMatrixProduct[CommonT,ColT,ValT](implicit rink : Ring[ValT]) :
+  implicit def rowVecMatrixProduct[CommonT,ColT,ValT](implicit ring : Ring[ValT]) :
     MatrixProduct[RowVector[CommonT,ValT],Matrix[CommonT,ColT,ValT],RowVector[ColT,ValT]] =
       new MatrixProduct[RowVector[CommonT,ValT],Matrix[CommonT,ColT,ValT],RowVector[ColT,ValT]] {
         def apply(left : RowVector[CommonT,ValT], right : Matrix[CommonT,ColT,ValT]) : RowVector[ColT,ValT] = {
           val prod = (left.toMatrix(0) * right) : Matrix[Int,ColT,ValT]
           new RowVector[ColT,ValT](prod.colSym, prod.valSym, prod.pipe.project(prod.colSym, prod.valSym))
+        }
+    }
+
+  implicit def colRowOuterProduct[IdxT,ValT](implicit ring : Ring[ValT]) :
+    MatrixProduct[ColVector[IdxT,ValT],RowVector[IdxT,ValT],Matrix[IdxT,IdxT,ValT]] =
+      new MatrixProduct[ColVector[IdxT,ValT],RowVector[IdxT,ValT],Matrix[IdxT,IdxT,ValT]] { 
+        def apply(left : ColVector[IdxT,ValT], right : RowVector[IdxT,ValT]) : Matrix[IdxT,IdxT,ValT] = {
+          val prod = (left.toMatrix(0) * right.toMatrix(0)) : Matrix[IdxT,IdxT,ValT]
+          new Matrix[IdxT,IdxT,ValT](prod.rowSym,
+                                     prod.colSym,
+                                     prod.valSym,
+                                     prod.pipe.project(prod.rowSym, prod.colSym, prod.valSym))
         }
     }
 
