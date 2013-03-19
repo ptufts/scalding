@@ -630,6 +630,14 @@ class Matrix[RowT, ColT, ValT]
     new Matrix[RowT,ColT,ValT](rowSym,colSym,valSym, joined.project(rowSym,colSym,valSym))
   }
 
+  /**
+   * keeps only those cols that are in the joining column
+   */
+  def keepColsBy[ValU](that : ColVector[ColT,ValU]) : Matrix[RowT,ColT,ValT] = {
+    val joined = pipe.joinWithSmaller(colSym -> that.rowS, that.pipe.project(that.rowS))
+    new Matrix[RowT,ColT,ValT](rowSym,colSym,valSym, joined.project(rowSym,colSym,valSym))
+  }
+
 
   /** Write the matrix, optionally renaming row,col,val fields to the given fields
    * then return this.
