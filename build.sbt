@@ -12,7 +12,7 @@ scalacOptions ++= Seq("-unchecked", "-deprecation")
 
 resolvers += "Concurrent Maven Repo" at "http://conjars.org/repo"
 
-etsyFSRepoPath := Some("/home/jattenberg/development/Ivy/repository")
+
 
 // Use ScalaCheck
 resolvers ++= Seq(
