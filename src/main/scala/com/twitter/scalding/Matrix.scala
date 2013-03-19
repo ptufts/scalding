@@ -691,6 +691,16 @@ class DiagonalMatrix[IdxT,ValT](val idxSym : Symbol,
       }
     new DiagonalMatrix[IdxT,ValT](idxSym, valSym, diagPipe, sizeHint)
   }
+
+  // Value operations
+  def mapValues[ValU](fn:(ValT) => ValU)(implicit mon : Monoid[ValU]) : DiagonalMatrix[IdxT,ValU] = {
+    val newPipe = pipe.flatMap(valSym -> valSym) {  imp : Tuple1[ValT] => // Ensure an arity of 1
+      //This annoying Tuple1 wrapping ensures we can handle ValT that may itself be a Tuple.
+      mon.nonZeroOption(fn(imp._1)).map {  Tuple1(_) }
+    }
+    new DiagonalMatrix[IdxT,ValU](this.idxSym, this.valSym, newPipe, sizeHint)
+  }
+
   /** Write optionally renaming val fields to the given fields
    * then return this.
    */
@@ -726,6 +736,15 @@ class RowVector[ColT,ValT] (val colS:Symbol, val valS:Symbol, inPipe: Pipe, val 
     val newPipe = pipe.mapTo((valS,colS) -> (valS,colS)) { tup: (ValT,ColT) => (fn(tup._1, tup._2), tup._2) }
       .filter(valS) { (v: ValNew) => mon.isNonZero(v) }
     new RowVector(colS, valS, newPipe, sizeH)
+  }
+
+  // Value operations
+  def mapValues[ValU](fn:(ValT) => ValU)(implicit mon : Monoid[ValU]) : RowVector[ColT,ValU] = { 
+    val newPipe = pipe.flatMap(valS -> valS) {  imp : Tuple1[ValT] => // Ensure an arity of 1
+      //This annoying Tuple1 wrapping ensures we can handle ValT that may itself be a Tuple.
+      mon.nonZeroOption(fn(imp._1)).map {  Tuple1(_) }
+    }
+    new RowVector[ColT,ValU](this.colS, this.valS, newPipe, sizeH)
   }
 
   /** Do a right-propogation of a row, transpose of Matrix.propagate
@@ -820,6 +839,15 @@ class ColVector[RowT,ValT] (val rowS:Symbol, val valS:Symbol, inPipe : Pipe, val
    */
   def mapWithIndex[ValNew](fn: (ValT,RowT) => ValNew)(implicit mon: Monoid[ValNew]):
     ColVector[RowT,ValNew] = transpose.mapWithIndex(fn).transpose
+
+  // Value operations
+  def mapValues[ValU](fn:(ValT) => ValU)(implicit mon : Monoid[ValU]) : ColVector[RowT,ValU] = { 
+    val newPipe = pipe.flatMap(valS -> valS) {  imp : Tuple1[ValT] => // Ensure an arity of 1
+      //This annoying Tuple1 wrapping ensures we can handle ValT that may itself be a Tuple.
+      mon.nonZeroOption(fn(imp._1)).map {  Tuple1(_) }
+    }
+    new ColVector[RowT,ValU](this.rowS, this.valS, newPipe, sizeH)
+  }
 
   def sum(implicit mon : Monoid[ValT]) : Scalar[ValT] = {
     val scalarPipe = pipe.groupAll{ _.reduce(valS -> valS) { (left : Tuple1[ValT], right : Tuple1[ValT]) =>
