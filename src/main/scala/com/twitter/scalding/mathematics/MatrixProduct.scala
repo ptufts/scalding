@@ -143,7 +143,7 @@ object MatrixProduct extends java.io.Serializable {
       }
     }
 
-  implicit def scalarRowVectorRightProduct[Col,ValT](implicit ring : Ring[ValT]) :
+  implicit def scalarRowRightProduct[Col,ValT](implicit ring : Ring[ValT]) :
     MatrixProduct[RowVector[Col,ValT],Scalar[ValT],RowVector[Col,ValT]] =
     new MatrixProduct[RowVector[Col,ValT],Scalar[ValT],RowVector[Col,ValT]] {
       def apply(left : RowVector[Col,ValT], right : Scalar[ValT]) : RowVector[Col,ValT]= {
@@ -169,7 +169,7 @@ object MatrixProduct extends java.io.Serializable {
       }
     }
 
-  implicit def scalarColVectorRightProduct[Row,ValT](implicit ring : Ring[ValT]) :
+  implicit def scalarColRightProduct[Row,ValT](implicit ring : Ring[ValT]) :
     MatrixProduct[ColVector[Row,ValT],Scalar[ValT],ColVector[Row,ValT]] =
     new MatrixProduct[ColVector[Row,ValT],Scalar[ValT],ColVector[Row,ValT]] {
       def apply(left : ColVector[Row,ValT], right : Scalar[ValT]) : ColVector[Row,ValT]= {
@@ -186,6 +186,58 @@ object MatrixProduct extends java.io.Serializable {
     MatrixProduct[Scalar[ValT],ColVector[Row,ValT],ColVector[Row,ValT]] =
     new MatrixProduct[Scalar[ValT],ColVector[Row,ValT],ColVector[Row,ValT]] {
       def apply(left : Scalar[ValT], right : ColVector[Row,ValT]) : ColVector[Row,ValT]= {
+        val prod = right.toMatrix(0).nonZerosWith(left).mapValues({matScal =>
+          val (matVal, scalarVal) = matScal
+          ring.times(scalarVal, matVal)
+        })(ring)
+
+        new ColVector[Row,ValT](prod.rowSym, prod.valSym, prod.pipe.project(prod.rowSym, prod.valSym))
+      }
+    }
+
+  implicit def litScalarRowRightProduct[Col,ValT](implicit ring : Ring[ValT]) :
+    MatrixProduct[RowVector[Col,ValT],LiteralScalar[ValT],RowVector[Col,ValT]] =
+    new MatrixProduct[RowVector[Col,ValT],LiteralScalar[ValT],RowVector[Col,ValT]] {
+      def apply(left : RowVector[Col,ValT], right : LiteralScalar[ValT]) : RowVector[Col,ValT]= {
+        val prod = left.toMatrix(0).nonZerosWith(right).mapValues({leftRight =>
+          val (left, right) = leftRight
+          ring.times(left, right)
+        })(ring)
+
+        new RowVector[Col,ValT](prod.colSym, prod.valSym, prod.pipe.project(prod.colSym, prod.valSym))
+      }
+    }
+
+  implicit def litScalarRowLeftProduct[Col,ValT](implicit ring : Ring[ValT]) :
+    MatrixProduct[LiteralScalar[ValT],RowVector[Col,ValT],RowVector[Col,ValT]] =
+    new MatrixProduct[LiteralScalar[ValT],RowVector[Col,ValT],RowVector[Col,ValT]] {
+      def apply(left : LiteralScalar[ValT], right : RowVector[Col,ValT]) : RowVector[Col,ValT]= {
+        val prod = right.toMatrix(0).nonZerosWith(left).mapValues({matScal =>
+          val (matVal, scalarVal) = matScal
+          ring.times(scalarVal, matVal)
+        })(ring)
+
+        new RowVector[Col,ValT](prod.rowSym, prod.valSym, prod.pipe.project(prod.rowSym, prod.valSym))
+      }
+    }
+
+  implicit def litScalarColRightProduct[Row,ValT](implicit ring : Ring[ValT]) :
+    MatrixProduct[ColVector[Row,ValT],LiteralScalar[ValT],ColVector[Row,ValT]] =
+    new MatrixProduct[ColVector[Row,ValT],LiteralScalar[ValT],ColVector[Row,ValT]] {
+      def apply(left : ColVector[Row,ValT], right : LiteralScalar[ValT]) : ColVector[Row,ValT]= {
+        val prod = left.toMatrix(0).nonZerosWith(right).mapValues({leftRight =>
+          val (left, right) = leftRight
+          ring.times(left, right)
+        })(ring)
+
+        new ColVector[Row,ValT](prod.rowSym, prod.valSym, prod.pipe.project(prod.rowSym, prod.valSym))
+      }
+    }
+
+  implicit def litScalarColLeftProduct[Row,ValT](implicit ring : Ring[ValT]) :
+    MatrixProduct[LiteralScalar[ValT],ColVector[Row,ValT],ColVector[Row,ValT]] =
+    new MatrixProduct[LiteralScalar[ValT],ColVector[Row,ValT],ColVector[Row,ValT]] {
+      def apply(left : LiteralScalar[ValT], right : ColVector[Row,ValT]) : ColVector[Row,ValT]= {
         val prod = right.toMatrix(0).nonZerosWith(left).mapValues({matScal =>
           val (matVal, scalarVal) = matScal
           ring.times(scalarVal, matVal)
