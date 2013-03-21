@@ -247,6 +247,58 @@ object MatrixProduct extends java.io.Serializable {
       }
     }
 
+  implicit def scalarDiagRightProduct[Row,ValT](implicit ring : Ring[ValT]) :
+    MatrixProduct[DiagonalMatrix[Row,ValT],Scalar[ValT], DiagonalMatrix[Row,ValT]] =
+    new MatrixProduct[DiagonalMatrix[Row,ValT],Scalar[ValT],DiagonalMatrix[Row,ValT]] {
+      def apply(left : DiagonalMatrix[Row,ValT], right : Scalar[ValT]) : DiagonalMatrix[Row,ValT]= {
+        val prod = left.toRow.toMatrix(0).nonZerosWith(right).mapValues({leftRight =>
+          val (left, right) = leftRight
+          ring.times(left, right)
+        })(ring)
+
+        new DiagonalMatrix[Row,ValT](prod.rowSym, prod.valSym, prod.pipe.project(prod.rowSym, prod.valSym))
+      }
+    }
+
+  implicit def scalarDiagLeftProduct[Row,ValT](implicit ring : Ring[ValT]) :
+    MatrixProduct[Scalar[ValT],DiagonalMatrix[Row,ValT],DiagonalMatrix[Row,ValT]] =
+    new MatrixProduct[Scalar[ValT],DiagonalMatrix[Row,ValT],DiagonalMatrix[Row,ValT]] {
+      def apply(left : Scalar[ValT], right : DiagonalMatrix[Row,ValT]) : DiagonalMatrix[Row,ValT]= {
+        val prod = right.toRow.toMatrix(0).nonZerosWith(left).mapValues({matScal =>
+          val (matVal, scalarVal) = matScal
+          ring.times(scalarVal, matVal)
+        })(ring)
+
+        new DiagonalMatrix[Row,ValT](prod.rowSym, prod.valSym, prod.pipe.project(prod.rowSym, prod.valSym))
+      }
+    }
+
+  implicit def litScalarDiagRightProduct[Col,ValT](implicit ring : Ring[ValT]) :
+    MatrixProduct[DiagonalMatrix[Col,ValT],LiteralScalar[ValT],DiagonalMatrix[Col,ValT]] =
+    new MatrixProduct[DiagonalMatrix[Col,ValT],LiteralScalar[ValT],DiagonalMatrix[Col,ValT]] {
+      def apply(left : DiagonalMatrix[Col,ValT], right : LiteralScalar[ValT]) : DiagonalMatrix[Col,ValT]= {
+        val prod = left.toRow.toMatrix(0).nonZerosWith(right).mapValues({leftRight =>
+          val (left, right) = leftRight
+          ring.times(left, right)
+        })(ring)
+
+        new DiagonalMatrix[Col,ValT](prod.colSym, prod.valSym, prod.pipe.project(prod.colSym, prod.valSym))
+      }
+    }
+
+  implicit def litScalarDiagLeftProduct[Col,ValT](implicit ring : Ring[ValT]) :
+    MatrixProduct[LiteralScalar[ValT],DiagonalMatrix[Col,ValT],DiagonalMatrix[Col,ValT]] =
+    new MatrixProduct[LiteralScalar[ValT],DiagonalMatrix[Col,ValT],DiagonalMatrix[Col,ValT]] {
+      def apply(left : LiteralScalar[ValT], right : DiagonalMatrix[Col,ValT]) : DiagonalMatrix[Col,ValT]= {
+        val prod = right.toRow.toMatrix(0).nonZerosWith(left).mapValues({matScal =>
+          val (matVal, scalarVal) = matScal
+          ring.times(scalarVal, matVal)
+        })(ring)
+
+        new DiagonalMatrix[Col,ValT](prod.rowSym, prod.valSym, prod.pipe.project(prod.rowSym, prod.valSym))
+      }
+    }
+
   implicit def rowColProduct[IdxT,ValT](implicit ring : Ring[ValT]) :
     MatrixProduct[RowVector[IdxT,ValT],ColVector[IdxT,ValT],Scalar[ValT]] =
     new MatrixProduct[RowVector[IdxT,ValT],ColVector[IdxT,ValT],Scalar[ValT]] {

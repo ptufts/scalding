@@ -614,10 +614,13 @@ class Matrix[RowT, ColT, ValT]
    * removes any elements in this matrix that also appear in the argument matrix
    */
   def filterBy[ValU](that : Matrix[RowT,ColT,ValU]) : Matrix[RowT,ColT,ValT] = {
-    val filterField = '___filter_field___
+    val filterR = '___filterR___
+    val filterC = '___filterC___
+    val filterV = '___filterV___
 
-    val joined = pipe.joinWithSmaller((rowSym, colSym) -> (that.rowSym, that.colSym), that.pipe.rename(that.valSym -> filterField))
-    val filtered = joined.filter(filterField){ x : ValU => null == x }
+    val joined = pipe.joinWithSmaller((rowSym, colSym) -> (filterR, filterC),
+                                      that.pipe.rename((that.rowSym, that.colSym, that.valSym) -> (filterR, filterC, filterV)), new LeftJoin)
+    val filtered = joined.filter(filterV){ x : ValU => null == x }
     new Matrix[RowT,ColT,ValT](rowSym,colSym,valSym, filtered.project(rowSym,colSym,valSym))
   }
 
