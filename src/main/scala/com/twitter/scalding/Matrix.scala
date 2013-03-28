@@ -746,6 +746,11 @@ class RowVector[ColT,ValT] (val colS:Symbol, val valS:Symbol, inPipe: Pipe, val 
   def *[That,Res](that : That)(implicit prod : MatrixProduct[RowVector[ColT,ValT],That,Res]) : Res
     = { prod(this, that) }
 
+  def +(that : RowVector[ColT,ValT])(implicit mon : Monoid[ValT]) = (this.toMatrix(true) + that.toMatrix(true)).getRow(true)
+
+  def -(that : RowVector[ColT,ValT])(implicit group : Group[ValT]) = (this.toMatrix(true) - that.toMatrix(true)).getRow(true)
+
+
   def transpose : ColVector[ColT,ValT] = {
     new ColVector[ColT,ValT](colS, valS, inPipe, sizeH.transpose)
   }
@@ -858,6 +863,10 @@ class ColVector[RowT,ValT] (val rowS:Symbol, val valS:Symbol, inPipe : Pipe, val
 
   def *[That,Res](that : That)(implicit prod : MatrixProduct[ColVector[RowT,ValT],That,Res]) : Res
     = { prod(this, that) }
+
+  def +(that : ColVector[RowT,ValT])(implicit mon : Monoid[ValT]) = (this.toMatrix(true) + that.toMatrix(true)).getCol(true)
+
+  def -(that : ColVector[RowT,ValT])(implicit group : Group[ValT]) = (this.toMatrix(true) - that.toMatrix(true)).getCol(true)
 
   def transpose : RowVector[RowT,ValT] = {
     new RowVector[RowT,ValT](rowS, valS, inPipe, sizeH.transpose)
