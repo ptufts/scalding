@@ -321,6 +321,16 @@ class Matrix[RowT, ColT, ValT]
     new Matrix[RowT,ColT,ValT](rowSym, topSym, valSym, newPipe, FiniteHint(-1L,k))
   }
 
+  protected lazy val rowL0Norm = {
+    val matD = this.asInstanceOf[Matrix[RowT,ColT,Double]]
+    (matD.mapValues { x => 1.0 }
+      .sumColVectors
+      .diag
+      .inverse) * matD
+  }
+
+  def rowL0Normalize(implicit ev : =:=[ValT,Double]) : Matrix[RowT,ColT,Double] = rowL0Norm
+
   protected lazy val rowL1Norm = {
     val matD = this.asInstanceOf[Matrix[RowT,ColT,Double]]
     (matD.mapValues { x => x.abs }
@@ -328,6 +338,7 @@ class Matrix[RowT, ColT, ValT]
       .diag
       .inverse) * matD
   }
+
   // Row L1 normalization, only makes sense for Doubles
   // At the end of L1 normalization, sum of row values is one
   def rowL1Normalize(implicit ev : =:=[ValT,Double]) : Matrix[RowT,ColT,Double] = rowL1Norm
@@ -395,6 +406,11 @@ class Matrix[RowT, ColT, ValT]
 
   def topColElems( k : Int )(implicit ord : Ordering[ValT]) : Matrix[RowT,ColT,ValT] = {
     this.transpose.topRowElems(k)(ord).transpose
+  }
+
+
+  def colL0Normalize(implicit ev : =:=[ValT,Double]) = {
+    this.transpose.rowL0Normalize.transpose
   }
 
   def colL1Normalize(implicit ev : =:=[ValT,Double]) = {
@@ -765,6 +781,13 @@ class RowVector[ColT,ValT] (val colS:Symbol, val valS:Symbol, inPipe: Pipe, val 
     mat.transpose.propagate(this.transpose).transpose
   }
 
+  def L0Normalize(implicit ev : =:=[ValT,Double]) : RowVector[ColT,ValT] = {
+    val normedMatrix = this.toMatrix(0).rowL0Normalize
+    new RowVector(normedMatrix.colSym,
+                  normedMatrix.valSym,
+                  normedMatrix.pipe.project(normedMatrix.colSym, normedMatrix.valSym))
+  }
+
   def L1Normalize(implicit ev : =:=[ValT,Double]) : RowVector[ColT,ValT] = {
     val normedMatrix = this.toMatrix(0).rowL1Normalize
     new RowVector(normedMatrix.colSym,
@@ -868,6 +891,12 @@ class ColVector[RowT,ValT] (val rowS:Symbol, val valS:Symbol, inPipe : Pipe, val
     new Scalar[ValT](valS, scalarPipe)
   }
 
+  def L0Normalize(implicit ev : =:=[ValT,Double]) : ColVector[RowT,ValT] = {
+    val normedMatrix = this.toMatrix(0).colL0Normalize
+    new ColVector(normedMatrix.rowSym,
+                  normedMatrix.valSym,
+                  normedMatrix.pipe.project(normedMatrix.rowSym, normedMatrix.valSym))
+  }
 
   def L1Normalize(implicit ev : =:=[ValT,Double]) : ColVector[RowT,ValT] = {
     val normedMatrix = this.toMatrix(0).colL1Normalize
