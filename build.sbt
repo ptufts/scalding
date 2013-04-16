@@ -47,7 +47,7 @@ libraryDependencies += "com.twitter" % "maple" % "0.2.4"
 
 libraryDependencies += "com.twitter" % "algebird_2.9.2" % "0.1.7"
 
-libraryDependencies += "com.twitter" % "chill_2.9.2" % "0.1.3"
+libraryDependencies += "com.twitter" % "chill_2.9.2" % "0.2.0"
 
 libraryDependencies += "commons-lang" % "commons-lang" % "2.4"
 
