@@ -57,7 +57,7 @@ abstract class Tracing {
 }
 
 // This class does no tracing.
-class NullTracing extends Tracing {
+class NullTracing extends Tracing with Serializable {
   override def afterRead(src : Source, pipe : Pipe) : Pipe = pipe
   override def onWrite(pipe : Pipe) : Pipe = pipe
   override def beforeJoin(pipe : Pipe, side : Boolean) : Pipe = pipe
